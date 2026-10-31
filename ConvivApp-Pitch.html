@@ -1,0 +1,647 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pitch ConvivApp</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@500;600;700;800;900&display=swap">
+<style>
+[hidden]{display:none!important}
+img{max-width:100%}
+/* Layout: full-screen deck, one slide per screen, in the same "Liquid Glass" language as the ConvivApp site:
+   dark navy field with four blurred colour lights (purple, green, teal, pink), frosted cards, green-to-teal buttons.
+   Convi, the floating robot, is the recurring character on the cover and the closing slide. */
+:root{
+  --font-display:'Fredoka',ui-rounded,'Nunito',system-ui,sans-serif;
+  --font-body:'Nunito',system-ui,'Segoe UI',sans-serif;
+  /* tokens taken from the ConvivApp site */
+  --bg:#eef1fa; --bg2:#e6eaf7;
+  --card:rgba(255,255,255,.72); --card-solid:#ffffff; --border:rgba(255,255,255,.85); --line:#d3dae9;
+  --text:#1c2433; --muted:#5d6a80;
+  --brand:#3b3fb8; --purple:#6c4bc6; --green:#21a666; --teal:#159e9c; --pink:#e0569b; --yellow:#f2a52a;
+  --shadow:0 20px 50px rgba(27,42,107,.10); --shine:rgba(255,255,255,.55);
+  --g1:#6c4bc6; --g2:#3b3fb8; --g3:#159e9c; --g4:#21a666;
+  --blob-op:.36; --node-ring:rgba(59,63,184,.28);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#05070f; --bg2:#0a0e1c;
+    --card:rgba(18,23,42,.62); --card-solid:#121a2e; --border:rgba(255,255,255,.10); --line:#1f2945;
+    --text:#edf1fa; --muted:#a2aeca;
+    --shadow:0 24px 60px rgba(0,0,0,.55); --shine:rgba(255,255,255,.06);
+    --g1:#a78bfa; --g2:#818cf8; --g3:#2dd4bf; --g4:#4ade80;
+    --blob-op:.42; --node-ring:rgba(129,140,248,.3);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#05070f; --bg2:#0a0e1c;
+  --card:rgba(18,23,42,.62); --card-solid:#121a2e; --border:rgba(255,255,255,.10); --line:#1f2945;
+  --text:#edf1fa; --muted:#a2aeca;
+  --shadow:0 24px 60px rgba(0,0,0,.55); --shine:rgba(255,255,255,.06);
+  --g1:#a78bfa; --g2:#818cf8; --g3:#2dd4bf; --g4:#4ade80;
+  --blob-op:.42; --node-ring:rgba(129,140,248,.3);
+  color-scheme:dark;
+}
+
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);font-weight:600;font-size:clamp(16px,1.3vw,21px);line-height:1.5;overflow:hidden;-webkit-font-smoothing:antialiased}
+*,*::before,*::after{box-sizing:border-box}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--g3);outline-offset:3px;border-radius:10px}
+
+/* ---------- field ---------- */
+.deck{position:relative;height:100%;overflow:hidden;background:linear-gradient(180deg,var(--bg),var(--bg2))}
+.bg span{position:absolute;border-radius:50%;pointer-events:none;opacity:var(--blob-op);will-change:transform}
+.bg span:nth-child(1){width:60vmax;height:60vmax;left:-15vmax;top:-18vmax;background:radial-gradient(circle,var(--purple),transparent 65%);animation:d1 26s ease-in-out infinite alternate}
+.bg span:nth-child(2){width:60vmax;height:60vmax;right:-20vmax;top:10vmax;background:radial-gradient(circle,var(--green),transparent 65%);animation:d2 30s ease-in-out -10s infinite alternate}
+.bg span:nth-child(3){width:60vmax;height:60vmax;left:20vmax;bottom:-30vmax;background:radial-gradient(circle,var(--teal),transparent 65%);animation:d3 28s ease-in-out -20s infinite alternate}
+.bg span:nth-child(4){width:40vmax;height:40vmax;right:10vmax;bottom:-10vmax;background:radial-gradient(circle,var(--pink),transparent 65%);opacity:calc(var(--blob-op)*.8);animation:d1 24s ease-in-out -5s infinite alternate}
+@keyframes d1{to{transform:translate(7vmax,5vmax) scale(1.1)}}
+@keyframes d2{to{transform:translate(-8vmax,6vmax) scale(1.08)}}
+@keyframes d3{to{transform:translate(6vmax,-6vmax) scale(.92)}}
+
+/* ---------- slides ---------- */
+.slide{position:absolute;inset:0;display:flex;overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;
+  padding-block:clamp(66px,10vh,88px) clamp(92px,13vh,116px);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  opacity:0;visibility:hidden;transform:translateX(5%) scale(.985);
+  transition:opacity .55s ease,transform .8s cubic-bezier(.2,.8,.2,1),visibility 0s linear .8s}
+.slide.before{transform:translateX(-5%) scale(.985)}
+.slide.active{opacity:1;visibility:visible;transform:none;transition-delay:0s,0s,0s}
+.wrap{width:min(1180px,100%);margin:auto}
+
+/* staged reveal when a slide becomes active */
+.r{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .85s cubic-bezier(.2,.8,.2,1)}
+.slide.active .r{opacity:1;transform:none;transition-delay:calc(var(--i,0)*95ms + 220ms)}
+
+/* ---------- brand pill ---------- */
+.brand{position:fixed;z-index:6;top:calc(14px + env(safe-area-inset-top,0px));left:max(16px,env(safe-area-inset-left,0px));display:inline-flex;align-items:center;gap:10px;padding:8px 16px 8px 10px;border-radius:99px;
+  font:600 1.05rem/1 var(--font-display);background:var(--card);border:1px solid var(--border);backdrop-filter:blur(22px) saturate(1.7);-webkit-backdrop-filter:blur(22px) saturate(1.7);box-shadow:var(--shadow),inset 0 1px 0 var(--shine);transition:opacity .4s ease}
+.brand svg{width:28px;height:28px;display:block}
+.deck[data-cur="0"] .brand{opacity:0;pointer-events:none}
+
+/* ---------- type ---------- */
+.chip{display:inline-flex;align-items:center;gap:8px;padding:7px 14px;border-radius:99px;font-weight:800;font-size:.9rem;line-height:1.1;background:var(--card);border:1px solid var(--border);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);box-shadow:var(--shadow),inset 0 1px 0 var(--shine)}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 0 4px color-mix(in srgb,var(--green) 25%,transparent)}
+.chips{display:flex;flex-wrap:wrap;gap:10px}
+.title{margin:.5em 0 0;font-family:var(--font-display);font-weight:700;font-size:clamp(2rem,4.7vw,4.3rem);line-height:1.06;letter-spacing:-.02em;text-wrap:balance}
+.title.m{font-size:clamp(1.8rem,3.7vw,3.3rem)}
+.grad,.title em{font-style:normal;background:linear-gradient(120deg,var(--g1),var(--g2) 35%,var(--g3) 70%,var(--g4));-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-box-decoration-break:clone;box-decoration-break:clone;padding-bottom:.08em}
+.lead{margin:.9em 0 0;max-width:34em;font-size:clamp(1.05rem,1.65vw,1.5rem);line-height:1.45;color:var(--muted);text-wrap:pretty}
+
+/* ---------- glass + tiles ---------- */
+.glass{position:relative;background:var(--card);border:1px solid var(--border);border-radius:24px;
+  backdrop-filter:blur(22px) saturate(1.7);-webkit-backdrop-filter:blur(22px) saturate(1.7);
+  box-shadow:var(--shadow),inset 0 1px 0 var(--shine)}
+.glass::before{content:"";position:absolute;inset:0 0 55%;border-radius:inherit;background:linear-gradient(180deg,var(--shine),transparent);pointer-events:none}
+.glass>*{position:relative}
+.tile{display:grid;place-items:center;width:52px;height:52px;border-radius:16px;flex:none;color:#fff;background:var(--c);
+  background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 70%,#000));box-shadow:0 10px 22px color-mix(in srgb,var(--c) 38%,transparent)}
+.tile.sm{width:42px;height:42px;border-radius:13px}
+.tile svg{width:55%;height:55%;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.c-green{--c:var(--green)}.c-purple{--c:var(--purple)}.c-teal{--c:var(--teal)}.c-pink{--c:var(--pink)}.c-yellow{--c:var(--yellow)}.c-brand{--c:var(--brand)}
+
+/* ---------- grids ---------- */
+.hero{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);align-items:center;gap:clamp(16px,4vw,60px)}
+.split{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(0,.92fr);align-items:center;gap:clamp(18px,3.4vw,52px)}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(14px,2vw,26px)}
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(18px,3vw,44px)}
+@media (max-width:860px){.hero,.split,.two,.three{grid-template-columns:minmax(0,1fr)}}
+
+/* ---------- 1 portada ---------- */
+.wordmark{margin:.12em 0 .1em;font:700 clamp(3.4rem,10.6vw,8.8rem)/.92 var(--font-display);letter-spacing:-.03em}
+.cover .lead{font-size:clamp(1.2rem,2.2vw,1.9rem);color:var(--text);margin-top:.4em}
+.cover .chips{margin-top:1.6em}
+.hint{margin-top:2.2em;font-size:.85rem;color:var(--muted)}
+
+/* ---------- Convi ---------- */
+.convi-stage{position:relative;display:grid;place-items:center;justify-items:center;gap:10px}
+.convi-stage::before{content:"";position:absolute;width:min(92%,380px);aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,rgba(108,75,198,.38),rgba(21,158,156,.2) 50%,transparent 70%);filter:blur(10px);top:50%;left:50%;transform:translate(-50%,-56%)}
+.convi-btn{position:relative;width:min(100%,360px);max-height:52vh;aspect-ratio:200/240;padding:0;border:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;--heart:#4ade80}
+.convi-btn svg{display:block;width:100%;height:100%;overflow:visible}
+.mood-love{--heart:#f472b6}.mood-sleep{--heart:#818cf8}
+.mood-label{position:relative;font-size:.85rem;padding:6px 14px}
+.c-float{animation:bob 2.6s ease-in-out infinite;transform-origin:100px 180px}
+.c-flame{animation:flick .12s ease infinite alternate;transform-origin:100px 214px}
+.c-heart{animation:beat 1.1s ease infinite}
+.c-arm-l{animation:armL 2.6s ease-in-out infinite}
+.c-arm-r{animation:armR 2.6s ease-in-out infinite}
+.c-eye-open{transform-origin:100px 100px;animation:blink 4.5s ease infinite}
+.c-eyes{transition:transform .15s ease-out}
+.c-eye-happy,.c-eye-closed,.c-zzz{opacity:0}
+.mood-happy .c-eye-open,.mood-love .c-eye-open,.mood-wave .c-eye-open,.mood-sleep .c-eye-open{opacity:0}
+.mood-happy .c-eye-happy,.mood-love .c-eye-happy,.mood-wave .c-eye-happy{opacity:1}
+.mood-happy .c-blush,.mood-love .c-blush,.mood-wave .c-blush{opacity:.8}
+.mood-love .c-heart{animation-duration:.55s}
+.mood-wave .c-arm-r{animation:wave .45s ease-in-out infinite alternate}
+.mood-sleep .c-eye-closed{opacity:1}
+.mood-sleep .c-zzz{opacity:1;animation:zz 2.4s ease-in-out infinite}
+.mood-sleep .c-float{animation-duration:4s}
+.tickle .c-float{animation:jump .35s ease-in-out 2}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(-1.2deg)}50%{transform:translateY(-8px) rotate(1.2deg)}}
+@keyframes flick{from{transform:scaleY(1)}to{transform:scaleY(.72)}}
+@keyframes beat{0%,100%{transform:scale(1)}18%{transform:scale(1.2)}36%{transform:scale(1)}}
+@keyframes armL{0%,100%{transform:rotate(3deg)}50%{transform:rotate(-5deg)}}
+@keyframes armR{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(5deg)}}
+@keyframes blink{0%,95%,100%{transform:scaleY(1)}97%{transform:scaleY(.1)}}
+@keyframes wave{from{transform:rotate(-135deg)}to{transform:rotate(-168deg)}}
+@keyframes jump{0%,100%{transform:translateY(0)}50%{transform:translateY(-26px)}}
+@keyframes zz{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.c-arm-l,.c-arm-r,.c-heart{transform-box:view-box}
+.bubble{position:absolute;left:0;top:2%;padding:.65em 1.1em;border-radius:20px 20px 20px 6px;font:600 1rem/1.2 var(--font-display);animation:bubble 4s ease-in-out infinite alternate;z-index:1}
+@keyframes bubble{from{transform:rotate(-3deg)}to{transform:rotate(2deg) translateY(-6px)}}
+
+/* ---------- 2 hook ---------- */
+.hook .title{font-size:clamp(2.2rem,5.6vw,5rem);margin-top:.5em}
+.net{width:min(100%,440px);justify-self:center;margin:0}
+.net svg{display:block;width:100%;height:auto;overflow:visible}
+.net figcaption{margin-top:.6em;text-align:center;font:500 1rem var(--font-display);color:var(--muted)}
+.ring{stroke:var(--node-ring);stroke-width:1.5;fill:none;stroke-dasharray:4 7}
+.ray{stroke-width:3;stroke-linecap:round;stroke-dasharray:170;stroke-dashoffset:170;fill:none}
+.node{transform-box:fill-box;transform-origin:center;transform:scale(0)}
+.halo{fill:var(--green);opacity:0;transform-box:fill-box;transform-origin:center}
+.slide.active .ray{animation:ray .9s ease forwards;animation-delay:calc(.9s + var(--k)*.2s)}
+.slide.active .node{animation:pop .55s cubic-bezier(.2,1.5,.4,1) forwards;animation-delay:calc(.75s + var(--k)*.2s)}
+.slide.active .halo{animation:halo 2.8s ease-out 2.4s infinite}
+@keyframes ray{to{stroke-dashoffset:0}}
+@keyframes pop{to{transform:scale(1)}}
+@keyframes halo{0%{opacity:.45;transform:scale(1)}100%{opacity:0;transform:scale(3)}}
+
+/* ---------- 3 problema ---------- */
+.card{padding:clamp(20px,2.6vw,34px)}
+.card .who{display:flex;align-items:center;gap:14px;font:600 .85rem/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.card h3{margin:.9em 0 .4em;font:600 clamp(1.25rem,2.1vw,1.85rem)/1.2 var(--font-display);text-wrap:balance}
+.card p{margin:0;color:var(--muted)}
+.punch{margin:clamp(18px,3vh,32px) 0 0;font:500 clamp(1.1rem,1.9vw,1.6rem)/1.35 var(--font-display);max-width:30em;text-wrap:balance}
+.punch b{font-weight:700}
+.tags{margin-top:clamp(14px,2.4vh,26px);align-items:center}
+.tags .label{font:600 .8rem/1 var(--font-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-right:6px}
+
+/* ---------- 4 solución ---------- */
+.feat{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(10px,1.4vw,18px);margin-top:clamp(16px,2.8vh,30px)}
+.feat .glass{padding:clamp(14px,1.6vw,20px);border-radius:20px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}
+.feat h3{margin:0 0 .2em;font:600 1.05rem/1.2 var(--font-display)}
+.feat p{margin:0;font-size:.92rem;line-height:1.4;color:var(--muted)}
+@media (max-width:560px){.feat{grid-template-columns:minmax(0,1fr)}}
+.journey{padding:clamp(22px,2.8vw,38px)}
+.journey .head{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:clamp(14px,2.4vh,26px)}
+.journey .head b{font:600 1.15rem var(--font-display)}
+.track{position:relative;display:grid;gap:clamp(16px,3.2vh,32px);margin:0;padding:0;list-style:none}
+.track::before,.track::after{content:"";position:absolute;left:17px;top:18px;bottom:18px;width:3px;border-radius:3px}
+.track::before{background:var(--line)}
+.track::after{background:linear-gradient(var(--purple),var(--teal),var(--green));transform-origin:top;transform:scaleY(0)}
+.track li{position:relative;z-index:1;display:grid;grid-template-columns:36px minmax(0,1fr);gap:16px;align-items:center;font:600 clamp(1.05rem,1.7vw,1.4rem)/1.2 var(--font-display)}
+.track .n{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--card-solid);border:2px solid var(--line);color:var(--muted)}
+.track .n svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.8;stroke-linecap:round;stroke-linejoin:round}
+.slide.active .track::after{animation:fill 3.2s linear .9s forwards}
+.slide.active .track .n{animation:lit .45s ease forwards;animation-delay:calc(.9s + var(--k)*1.07s)}
+@keyframes fill{to{transform:scaleY(1)}}
+@keyframes lit{to{background:var(--green);border-color:var(--green);color:#fff}}
+.journey .foot{margin:clamp(16px,2.8vh,28px) 0 0;padding-top:16px;border-top:1px solid var(--line);font-size:.95rem;color:var(--muted)}
+
+/* ---------- 5 ventaja ---------- */
+.col .tile{margin-bottom:1em}
+.col h3{margin:0 0 .45em;font:600 clamp(1.25rem,2vw,1.7rem)/1.15 var(--font-display)}
+.col p{margin:0;color:var(--muted);max-width:26em}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(12px,2vw,28px);margin:clamp(26px,5vh,54px) 0 0;padding:0;list-style:none}
+.stats li{padding-top:14px;border-top:2px solid var(--line)}
+.stats .num{font:700 clamp(2rem,4vw,3.5rem)/1.05 var(--font-display);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.stats .lbl{margin-top:.4em;font:600 1rem/1.25 var(--font-display)}
+.stats .sub{margin-top:.15em;font-size:.88rem;color:var(--muted)}
+@media (max-width:700px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* ---------- 6 modelo ---------- */
+.free{display:inline-block;margin-top:.7em;padding:.05em .5em .12em;border-radius:24px;color:#fff;background:linear-gradient(135deg,var(--green),var(--teal));font:700 clamp(2.6rem,6.4vw,5.4rem)/1.05 var(--font-display);letter-spacing:-.02em;box-shadow:rgba(33,166,102,.35) 0 14px 36px}
+.rows{margin:0;padding:clamp(22px,2.8vw,38px);list-style:none}
+.rows li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:start;padding:clamp(14px,2.4vh,24px) 0;border-top:1px solid var(--line)}
+.rows li:first-child{border-top:0;padding-top:0}
+.rows li:last-child{padding-bottom:0}
+.rows h3{margin:0 0 .25em;font:600 clamp(1.1rem,1.7vw,1.4rem)/1.2 var(--font-display)}
+.rows p{margin:0;color:var(--muted);font-size:.97rem}
+
+/* ---------- 7 cta ---------- */
+.btns{display:flex;flex-wrap:wrap;gap:12px;margin-top:1.6em}
+.btn{display:inline-flex;align-items:center;gap:.6em;padding:14px 22px;border-radius:14px;font:800 1rem/1 var(--font-body);text-decoration:none;color:var(--text);background:var(--card);border:1px solid var(--border);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);box-shadow:var(--shadow);transition:transform .25s ease}
+.btn.primary{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--green),var(--teal));box-shadow:rgba(33,166,102,.35) 0 10px 26px}
+.btn:hover{transform:translateY(-2px)}
+.btn svg{width:1.15em;height:1.15em;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.url{margin-top:1.1em;font-size:.98rem;color:var(--muted);word-break:break-word}
+.url b{color:var(--text);font-weight:800}
+.credit{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin-top:clamp(20px,4vh,40px);padding-top:16px;border-top:1px solid var(--line);font-size:.92rem;color:var(--muted);max-width:36em}
+.founder-badge{display:inline-block;padding:4px 12px;border-radius:99px;font-weight:900;font-size:.8rem;background:linear-gradient(135deg,#ffd86b,#f2a52a);color:#3b2604}
+
+/* ---------- controls ---------- */
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:5;display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:12px;
+  padding-top:12px;padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.count{font:600 .95rem var(--font-display);color:var(--muted);font-variant-numeric:tabular-nums}
+.count b{color:var(--text)}
+.dots{display:flex;gap:8px;align-items:center;margin:0;padding:0;list-style:none}
+.dot{width:9px;height:9px;padding:0;border:0;border-radius:99px;background:var(--line);cursor:pointer;transition:width .35s ease,background .35s ease}
+.dot[aria-current="true"]{width:30px;background:linear-gradient(90deg,var(--green),var(--teal))}
+.dot:hover{background:var(--muted)}
+.ctl{display:flex;gap:8px;justify-content:flex-end}
+.ib{display:grid;place-items:center;width:44px;height:44px;padding:0;border-radius:50%;cursor:pointer;border:1px solid var(--border);background:var(--card);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);color:var(--text);box-shadow:var(--shadow);transition:transform .2s ease}
+.ib:hover{transform:scale(1.08)}
+.ib:disabled{opacity:.35;cursor:default;transform:none}
+.ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+@media (max-width:640px){.count,#fs{display:none}.bar{grid-template-columns:auto 1fr}.dots{gap:6px}}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;animation-delay:0s!important;transition-duration:.01ms!important;transition-delay:0s!important}
+}
+</style>
+</head>
+<body>
+<!-- shared defs for Convi (gradients and filters from the ConvivApp site) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.5"/></filter>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+    <linearGradient id="flame" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#a5f3fc"/><stop offset="1" stop-color="#22d3ee" stop-opacity="0"/></linearGradient>
+    <linearGradient id="armg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e2e8f0"/><stop offset="1" stop-color="#94a3b8"/></linearGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff"/><stop offset=".5" stop-color="#e2e8f0"/><stop offset="1" stop-color="#b8c4d6"/></linearGradient>
+    <linearGradient id="visor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e293b"/><stop offset="1" stop-color="#0b1120"/></linearGradient>
+  </defs>
+</svg>
+
+<div class="deck" id="deck" data-cur="0">
+  <div class="bg" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+
+  <div class="brand" aria-hidden="true">
+    <svg viewBox="0 0 64 64"><circle cx="32" cy="22" r="15" fill="#21A666" opacity=".92"/><circle cx="23" cy="38" r="15" fill="#6C4BC6" opacity=".92"/><circle cx="41" cy="38" r="15" fill="#159E9C" opacity=".92"/></svg>ConvivApp
+  </div>
+
+  <!-- 1 · Portada -->
+  <section class="slide active cover" data-name="portada" role="group" aria-roledescription="diapositiva" aria-label="Portada">
+    <div class="wrap hero">
+      <div>
+        <span class="chip r" style="--i:0"><i></i>Tecnología para una mejor convivencia escolar</span>
+        <h1 class="wordmark r" style="--i:1">Conviv<span class="grad">App</span></h1>
+        <p class="lead r" style="--i:2">La convivencia escolar, en buenas manos.</p>
+        <div class="chips r" style="--i:3"><span class="chip">Gratis</span><span class="chip">Android · Windows · Web</span></div>
+        <p class="hint r" style="--i:4">Usa ← → o desliza para avanzar</p>
+      </div>
+      <div class="convi-stage r" style="--i:2"><div data-convi="wave"></div></div>
+    </div>
+  </section>
+
+  <!-- 2 · Hook -->
+  <section class="slide hook" data-name="hook" role="group" aria-roledescription="diapositiva" aria-label="Hook">
+    <div class="wrap hero">
+      <div>
+        <span class="chip r" style="--i:0"><i></i>Hook</span>
+        <h2 class="title r" style="--i:1">¿Y si ningún estudiante tuviera que vivir <em>solo</em> una situación de acoso?</h2>
+        <p class="lead r" style="--i:2">Con esa pregunta empezó ConvivApp.</p>
+      </div>
+      <figure class="net r" style="--i:2">
+        <svg viewBox="0 0 400 400" role="img" aria-label="Un estudiante al centro, acompañado por una red de personas">
+          <circle class="ring" cx="200" cy="200" r="150"/>
+          <circle class="ring" cx="200" cy="200" r="92"/>
+          <g>
+            <line class="ray" style="--k:0" stroke="#6C4BC6" x1="200" y1="200" x2="350" y2="200"/>
+            <line class="ray" style="--k:1" stroke="#21A666" x1="200" y1="200" x2="275" y2="330"/>
+            <line class="ray" style="--k:2" stroke="#159E9C" x1="200" y1="200" x2="125" y2="330"/>
+            <line class="ray" style="--k:3" stroke="#E0569B" x1="200" y1="200" x2="50" y2="200"/>
+            <line class="ray" style="--k:4" stroke="#F2A52A" x1="200" y1="200" x2="125" y2="70"/>
+            <line class="ray" style="--k:5" stroke="#3B3FB8" x1="200" y1="200" x2="275" y2="70"/>
+          </g>
+          <circle class="node" style="--k:0" fill="#6C4BC6" cx="350" cy="200" r="14"/>
+          <circle class="node" style="--k:1" fill="#21A666" cx="275" cy="330" r="14"/>
+          <circle class="node" style="--k:2" fill="#159E9C" cx="125" cy="330" r="14"/>
+          <circle class="node" style="--k:3" fill="#E0569B" cx="50" cy="200" r="14"/>
+          <circle class="node" style="--k:4" fill="#F2A52A" cx="125" cy="70" r="14"/>
+          <circle class="node" style="--k:5" fill="#3B3FB8" cx="275" cy="70" r="14"/>
+          <circle class="halo" cx="200" cy="200" r="30"/>
+          <g transform="translate(158.4 161) scale(1.3)">
+            <circle cx="32" cy="22" r="15" fill="#21A666" opacity=".92"/><circle cx="23" cy="38" r="15" fill="#6C4BC6" opacity=".92"/><circle cx="41" cy="38" r="15" fill="#159E9C" opacity=".92"/>
+          </g>
+        </svg>
+        <figcaption>De estar solo a estar acompañado</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 3 · Problema -->
+  <section class="slide" data-name="problema" role="group" aria-roledescription="diapositiva" aria-label="Problema">
+    <div class="wrap">
+      <span class="chip r" style="--i:0"><i></i>Problema</span>
+      <h2 class="title m r" style="--i:1">Pedir ayuda no debería dar <em>miedo</em></h2>
+      <div class="two" style="margin-top:clamp(18px,3.4vh,36px)">
+        <article class="glass card r" style="--i:2">
+          <div class="who"><span class="tile c-purple"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c.8-4 3.6-6 7-6s6.2 2 7 6"/></svg></span>El estudiante</div>
+          <h3>Vive acoso, ciberacoso, agresiones o conflictos.</h3>
+          <p>Necesita una forma segura de contarlo, con su nombre o sin él.</p>
+        </article>
+        <article class="glass card r" style="--i:3">
+          <div class="who"><span class="tile c-teal"><svg viewBox="0 0 24 24"><path d="M3 20h18M5 20V10l7-5 7 5v10"/><path d="M10 20v-5h4v5"/></svg></span>El colegio</div>
+          <h3>Necesita enterarse de cada situación.</h3>
+          <p>Y atenderla a tiempo, empezando por lo más urgente.</p>
+        </article>
+      </div>
+      <div class="chips tags r" style="--i:4"><span class="label">Lo que se reporta</span><span class="chip">Acoso</span><span class="chip">Ciberacoso</span><span class="chip">Agresiones</span><span class="chip">Conflictos</span></div>
+      <p class="punch r" style="--i:5">Si pedir ayuda cuesta, los casos no llegan. <b class="grad">Si no llegan, nadie los atiende.</b></p>
+    </div>
+  </section>
+
+  <!-- 4 · Solución -->
+  <section class="slide" data-name="solucion" role="group" aria-roledescription="diapositiva" aria-label="Solución">
+    <div class="wrap split">
+      <div>
+        <span class="chip r" style="--i:0"><i></i>Solución</span>
+        <h2 class="title m r" style="--i:1">Un canal seguro entre cada estudiante y su <em>colegio</em></h2>
+        <p class="lead r" style="--i:2">ConvivApp conecta a los estudiantes con el equipo de convivencia y le da seguimiento a cada caso.</p>
+        <div class="feat">
+          <div class="glass r" style="--i:3"><span class="tile sm c-green"><svg viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 5-3.4 8.6-7 10-3.6-1.4-7-5-7-10V6l7-3z"/></svg></span><div><h3>Reporte anónimo</h3><p>Con o sin nombre, con fotos y nivel de urgencia.</p></div></div>
+          <div class="glass r" style="--i:4"><span class="tile sm c-purple"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4V5z"/></svg></span><div><h3>Seguimiento con chat</h3><p>Cada caso tiene estado y un chat privado con el equipo.</p></div></div>
+          <div class="glass r" style="--i:5"><span class="tile sm c-pink"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3.5"/><path d="M5.6 5.6l3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"/></svg></span><div><h3>Botón SOS</h3><p>Teléfonos de emergencia y el contacto del colegio, a un toque.</p></div></div>
+          <div class="glass r" style="--i:6"><span class="tile sm c-yellow"><svg viewBox="0 0 24 24"><path d="M5 20v-7M12 20V5M19 20v-10"/></svg></span><div><h3>Panel del colegio</h3><p>Casos urgentes primero, notas internas e historial.</p></div></div>
+        </div>
+      </div>
+      <aside class="glass journey r" style="--i:3" aria-label="Cómo avanza un caso">
+        <div class="head"><b>Así avanza un caso</b><span class="chip">Anónimo si quieres</span></div>
+        <ol class="track">
+          <li style="--k:0"><span class="n"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Recibido</li>
+          <li style="--k:1"><span class="n"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>En revisión</li>
+          <li style="--k:2"><span class="n"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>En atención</li>
+          <li style="--k:3"><span class="n"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>Solucionado</li>
+        </ol>
+        <p class="foot">Cada cambio de estado le avisa al estudiante al instante.</p>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 5 · Ventaja -->
+  <section class="slide" data-name="ventaja" role="group" aria-roledescription="diapositiva" aria-label="Ventaja">
+    <div class="wrap">
+      <span class="chip r" style="--i:0"><i></i>Ventaja</span>
+      <h2 class="title m r" style="--i:1">Lo que nos <em>distingue</em></h2>
+      <div class="three" style="margin-top:clamp(22px,4vh,44px)">
+        <div class="col r" style="--i:2">
+          <span class="tile c-teal"><svg viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/><circle cx="12" cy="15.5" r="1.2"/></svg></span>
+          <h3>Anonimato real</h3>
+          <p>Los reportes anónimos se guardan con una clave privada, no con tu cuenta. El colegio los atiende sin saber quién los envió.</p>
+        </div>
+        <div class="col r" style="--i:3">
+          <span class="tile c-purple"><svg viewBox="0 0 24 24"><path d="M3 20h18M5 20V10l7-5 7 5v10"/><path d="M10 20v-5h4v5"/></svg></span>
+          <h3>Cada colegio ve lo suyo</h3>
+          <p>El personal solo accede a los casos de su institución, y las reglas del servidor lo garantizan.</p>
+        </div>
+        <div class="col r" style="--i:4">
+          <span class="tile c-pink"><svg viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="11" rx="5.5"/><path d="M8 10.5v4M6 12.5h4"/><circle cx="15.5" cy="11.5" r=".9"/><circle cx="17.5" cy="13.5" r=".9"/></svg></span>
+          <h3>Se aprende jugando</h3>
+          <p>Retos, minijuegos, niveles y logros, con juegos como Catastrophic Racing y Dibuja y Adivina, y Convi como compañero.</p>
+        </div>
+      </div>
+      <ul class="stats r" style="--i:5">
+        <li><div class="num grad" data-count="3">3</div><div class="lbl">plataformas</div><div class="sub">Android, Windows y web</div></li>
+        <li><div class="num grad">+<span data-count="15">15</span></div><div class="lbl">juegos</div><div class="sub">para aprender y divertirse</div></li>
+        <li><div class="num grad">+<span data-count="70">70</span></div><div class="lbl">pruebas automáticas</div><div class="sub">antes de cada versión</div></li>
+        <li><div class="num grad" data-count="11">11</div><div class="lbl">etapas de desarrollo</div><div class="sub">hasta la versión 0.19</div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 6 · Modelo -->
+  <section class="slide" data-name="modelo" role="group" aria-roledescription="diapositiva" aria-label="Modelo">
+    <div class="wrap split">
+      <div>
+        <span class="chip r" style="--i:0"><i></i>Modelo</span>
+        <h2 class="title m r" style="--i:1">Gratis para quien la usa</h2>
+        <div class="r" style="--i:2"><span class="free">$0</span></div>
+        <p class="lead r" style="--i:3">Estudiantes y personal de los colegios no pagan nada, y la app está construida para mantenerse.</p>
+      </div>
+      <ul class="rows glass r" style="--i:3">
+        <li><span class="tile c-brand"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></svg></span><div><h3>Un solo código, tres plataformas</h3><p>Flutter sirve a Android, Windows y la web con el mismo trabajo.</p></div></li>
+        <li><span class="tile c-teal"><svg viewBox="0 0 24 24"><path d="M7 18a4.5 4.5 0 0 1-.6-8.96A6 6 0 0 1 18 10.5 3.75 3.75 0 0 1 17.5 18H7z"/></svg></span><div><h3>Servicios en la nube</h3><p>Firebase maneja las cuentas, los datos en tiempo real y las reglas de seguridad.</p></div></li>
+        <li><span class="tile c-yellow"><svg viewBox="0 0 24 24"><path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/></svg></span><div><h3>Sin licencias de terceros</h3><p>La música y los efectos se sintetizan con código, y Convi, los autos y las pistas se dibujan en código.</p></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 7 · CTA -->
+  <section class="slide" data-name="cta" role="group" aria-roledescription="diapositiva" aria-label="Llamado a la acción">
+    <div class="wrap hero">
+      <div>
+        <span class="chip r" style="--i:0"><i></i>CTA</span>
+        <h2 class="title r" style="--i:1">Pruébala hoy. <em>Es gratis.</em></h2>
+        <p class="lead r" style="--i:2">Disponible para Android, Windows y cualquier navegador, también en iPhone.</p>
+        <div class="btns r" style="--i:3">
+          <a class="btn primary" href="https://convivapp-3a5d6.web.app" target="_blank" rel="noopener noreferrer">Usar en la web <svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
+          <a class="btn" href="https://convivsolutions.github.io/convivapp-descargas/" target="_blank" rel="noopener noreferrer">Descargas para Android y Windows <svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg></a>
+        </div>
+        <p class="url r" style="--i:4"><b>convivsolutions.github.io/convivapp-descargas</b></p>
+        <div class="credit r" style="--i:5"><span class="founder-badge">Fundador</span><span>Julian Enrique Jimeno Orozco · Hecha con Flutter y Firebase</span></div>
+      </div>
+      <div class="convi-stage r" style="--i:2"><div class="bubble glass">¡Hola! Soy Convi.</div><div data-convi="wave"></div></div>
+    </div>
+  </section>
+
+  <nav class="bar" aria-label="Navegación de la presentación">
+    <div class="count" aria-live="polite"><b id="cur">1</b> / <span id="tot">7</span></div>
+    <ol class="dots" id="dots"></ol>
+    <div class="ctl">
+      <button class="ib" id="theme" type="button" aria-label="Cambiar entre tema claro y oscuro" title="Tema (T)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg></button>
+      <button class="ib" id="fs" type="button" aria-label="Pantalla completa" title="Pantalla completa (F)"><svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+      <button class="ib" id="prev" type="button" aria-label="Diapositiva anterior"><svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <button class="ib" id="next" type="button" aria-label="Diapositiva siguiente"><svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></button>
+    </div>
+  </nav>
+</div>
+
+<script>
+(function(){
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var root = document.documentElement;
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var names = ['Portada','Hook','Problema','Solución','Ventaja','Modelo','CTA'];
+  var deck = document.getElementById('deck');
+  var cur = -1;
+
+  /* ---- Convi: the robot from the ConvivApp site (200x240), with its four moods ---- */
+  var CONVI = '<svg viewBox="0 0 200 240" role="img" aria-label="Convi, la mascota de ConvivApp: un robot flotante con sombrero de paja">' +
+    '<ellipse cx="100" cy="233" rx="42" ry="6" fill="#000" opacity=".2" filter="url(#soft)"/>' +
+    '<g class="c-float">' +
+      '<path class="c-flame" d="M86 214 Q100 242 114 214Z" fill="url(#flame)" filter="url(#soft)"/>' +
+      '<rect x="81" y="204" width="38" height="12" rx="6" fill="#475569"/>' +
+      '<g class="c-arm-l" style="transform-origin:56px 166px"><rect x="48" y="162" width="16" height="40" rx="8" fill="url(#armg)"/><circle cx="56" cy="206" r="11" fill="#f8fafc" stroke="rgba(0,0,0,.2)" stroke-width="1.2"/></g>' +
+      '<rect x="52" y="145" width="96" height="66" rx="28" fill="url(#metal)" stroke="rgba(0,0,0,.13)" stroke-width="1.5"/>' +
+      '<rect x="77" y="164" width="46" height="32" rx="12" fill="#0f172a"/>' +
+      '<g class="c-heart" style="transform-origin:100px 181px">' +
+        '<path d="M100 189 C88 181 90 171 96 171 C99 171 100 174 100 175 C100 174 101 171 104 171 C110 171 112 181 100 189Z" fill="var(--heart,#4ade80)" filter="url(#glow)" opacity=".6"/>' +
+        '<path d="M100 188 C89 180.5 91 172 96 172 C99 172 100 175 100 176 C100 175 101 172 104 172 C109 172 111 180.5 100 188Z" fill="var(--heart,#4ade80)"/>' +
+      '</g>' +
+      '<circle cx="62" cy="166" r="2.6" fill="#94a3b8"/><circle cx="138" cy="166" r="2.6" fill="#94a3b8"/>' +
+      '<rect x="87" y="139" width="26" height="12" rx="4" fill="#64748b"/>' +
+      '<g class="c-arm-r" style="transform-origin:144px 166px"><rect x="136" y="162" width="16" height="40" rx="8" fill="url(#armg)"/><circle cx="144" cy="206" r="11" fill="#f8fafc" stroke="rgba(0,0,0,.2)" stroke-width="1.2"/></g>' +
+      '<g class="c-head">' +
+        '<rect x="38" y="56" width="124" height="88" rx="36" fill="url(#metal)" stroke="rgba(0,0,0,.13)" stroke-width="1.5"/>' +
+        '<circle cx="36" cy="102" r="11" fill="#94a3b8"/><circle cx="164" cy="102" r="11" fill="#94a3b8"/>' +
+        '<circle cx="36" cy="102" r="6" fill="var(--heart,#4ade80)" filter="url(#soft)"/><circle cx="164" cy="102" r="6" fill="var(--heart,#4ade80)" filter="url(#soft)"/>' +
+        '<rect x="51" y="75" width="98" height="58" rx="26" fill="url(#visor)"/>' +
+        '<ellipse class="c-blush" cx="66" cy="118" rx="9" ry="4.5" fill="#ff6b9a" opacity="0" filter="url(#soft)"/><ellipse class="c-blush" cx="134" cy="118" rx="9" ry="4.5" fill="#ff6b9a" opacity="0" filter="url(#soft)"/>' +
+        '<g class="c-eyes">' +
+          '<g class="c-eye-open">' +
+            '<rect x="72.5" y="89.5" width="15" height="21" rx="7" fill="#67e8f9" filter="url(#glow)" opacity=".6"/><rect x="72.5" y="89.5" width="15" height="21" rx="7" fill="#67e8f9"/>' +
+            '<rect x="112.5" y="89.5" width="15" height="21" rx="7" fill="#67e8f9" filter="url(#glow)" opacity=".6"/><rect x="112.5" y="89.5" width="15" height="21" rx="7" fill="#67e8f9"/>' +
+            '<circle cx="77" cy="95" r="2.2" fill="#fff" opacity=".85"/><circle cx="117" cy="95" r="2.2" fill="#fff" opacity=".85"/>' +
+          '</g>' +
+          '<g class="c-eye-happy" fill="none" stroke="#67e8f9" stroke-width="4.5" stroke-linecap="round"><path d="M71 104 Q80 90 89 104"/><path d="M111 104 Q120 90 129 104"/></g>' +
+          '<g class="c-eye-closed" stroke="#67e8f9" stroke-width="3.5" stroke-linecap="round"><path d="M72 102h16M112 102h16"/></g>' +
+        '</g>' +
+        '<path class="c-mouth" d="M89 120 Q100 129 111 120" fill="none" stroke="#67e8f9" stroke-width="3.5" stroke-linecap="round"/>' +
+        '<path d="M56 80 Q70 74 92 76 L84 86 Q68 86 58 94Z" fill="#fff" opacity=".12"/>' +
+        '<g transform="translate(98 60) rotate(-6)">' +
+          '<path d="M-39.6 0 Q-42.2 -55.4 0 -58.1 Q42.2 -55.4 39.6 0Z" fill="#f6c945"/>' +
+          '<rect x="-40.3" y="-17.2" width="80.6" height="14.5" fill="#d62828"/>' +
+          '<ellipse cx="0" cy="2.6" rx="66" ry="14.5" fill="#d9a92e"/>' +
+          '<ellipse cx="0" cy="0" rx="63.4" ry="11.9" fill="#f6c945"/>' +
+        '</g>' +
+      '</g>' +
+    '</g>' +
+    '<g class="c-zzz" fill="#818cf8" font-family="Fredoka, sans-serif" font-weight="700"><text x="150" y="60" font-size="18">z</text><text x="162" y="44" font-size="13">z</text></g>' +
+  '</svg>';
+
+  var MOODS = [['wave','Saludando'],['happy','Feliz'],['love','Cariño'],['sleep','Durmiendo']];
+  var convis = [];
+  Array.prototype.forEach.call(document.querySelectorAll('[data-convi]'), function(host){
+    var btn = document.createElement('button');
+    btn.type = 'button'; btn.className = 'convi-btn mood-wave';
+    btn.setAttribute('aria-label', 'Convi. Tócalo para cambiar su ánimo');
+    btn.innerHTML = CONVI;
+    var label = document.createElement('span');
+    label.className = 'chip mood-label'; label.textContent = 'Toca a Convi';
+    host.parentNode.insertBefore(btn, host); host.parentNode.insertBefore(label, host); host.parentNode.removeChild(host);
+    var m = 0;
+    btn.addEventListener('click', function(e){
+      e.stopPropagation();
+      m = (m + 1) % MOODS.length;
+      btn.className = 'convi-btn mood-' + MOODS[m][0];
+      label.textContent = MOODS[m][1];
+      if (MOODS[m][0] !== 'sleep' && !reduce) { btn.classList.add('tickle'); setTimeout(function(){ btn.classList.remove('tickle'); }, 760); }
+    });
+    convis.push(btn);
+  });
+  if (!reduce) {
+    document.addEventListener('pointermove', function(e){
+      convis.forEach(function(btn){
+        var eyes = btn.querySelector('.c-eyes'); if (!eyes) return;
+        var r = btn.getBoundingClientRect(); if (!r.width) return;
+        var dx = (e.clientX - (r.left + r.width/2)) / r.width, dy = (e.clientY - (r.top + r.height*.4)) / r.height;
+        var x = Math.max(-4, Math.min(4, dx * 14)), y = Math.max(-3, Math.min(3, dy * 10));
+        eyes.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px)';
+      });
+    }, {passive:true});
+  }
+
+  /* ---- counters on the Ventaja slide ---- */
+  function runCounters(slide){
+    var els = slide.querySelectorAll('[data-count]');
+    Array.prototype.forEach.call(els, function(el){
+      var target = parseInt(el.getAttribute('data-count'), 10);
+      if (reduce) { el.textContent = target; return; }
+      var start = null, dur = 1200;
+      el.textContent = '0';
+      function frame(t){
+        if (start === null) start = t;
+        var p = Math.min(1, (t - start) / dur);
+        el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(frame); else el.textContent = target;
+      }
+      setTimeout(function(){ requestAnimationFrame(frame); }, 700);
+    });
+  }
+
+  /* ---- navigation ---- */
+  var dotsEl = document.getElementById('dots');
+  var dots = slides.map(function(s, i){
+    var li = document.createElement('li');
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'dot';
+    b.setAttribute('aria-label', 'Ir a ' + names[i]); b.title = names[i];
+    b.addEventListener('click', function(e){ e.stopPropagation(); go(i); });
+    li.appendChild(b); dotsEl.appendChild(li); return b;
+  });
+  document.getElementById('tot').textContent = slides.length;
+  var curEl = document.getElementById('cur');
+  var prevBtn = document.getElementById('prev'), nextBtn = document.getElementById('next');
+
+  function go(n){
+    n = Math.max(0, Math.min(slides.length - 1, n));
+    if (n === cur) return;
+    slides.forEach(function(s, i){
+      s.classList.toggle('active', i === n);
+      s.classList.toggle('before', i < n);
+      s.setAttribute('aria-hidden', i === n ? 'false' : 'true');
+      if ('inert' in s) s.inert = (i !== n);
+    });
+    dots.forEach(function(d, i){ if (i === n) d.setAttribute('aria-current', 'true'); else d.removeAttribute('aria-current'); });
+    cur = n;
+    deck.setAttribute('data-cur', n);
+    curEl.textContent = n + 1;
+    prevBtn.disabled = n === 0; nextBtn.disabled = n === slides.length - 1;
+    slides[n].scrollTop = 0;
+    if (slides[n].querySelector('[data-count]')) runCounters(slides[n]);
+    var name = slides[n].getAttribute('data-name');
+    try { if (location.hash.slice(1) !== name) location.hash = name; } catch (e) {}
+  }
+  function fromHash(){
+    var h = ''; try { h = location.hash.slice(1); } catch (e) {}
+    for (var i = 0; i < slides.length; i++) if (slides[i].getAttribute('data-name') === h) return i;
+    return 0;
+  }
+  var next = function(){ go(cur + 1); }, prev = function(){ go(cur - 1); };
+  prevBtn.addEventListener('click', function(e){ e.stopPropagation(); prev(); });
+  nextBtn.addEventListener('click', function(e){ e.stopPropagation(); next(); });
+  window.addEventListener('hashchange', function(){ go(fromHash()); });
+
+  document.addEventListener('keydown', function(e){
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    var k = e.key;
+    if ((k === ' ' || k === 'Enter') && e.target && e.target.closest && e.target.closest('button,a')) return;
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ' || k === 'Enter') { e.preventDefault(); next(); }
+    else if (k === 'ArrowLeft' || k === 'PageUp' || k === 'Backspace') { e.preventDefault(); prev(); }
+    else if (k === 'Home') { e.preventDefault(); go(0); }
+    else if (k === 'End') { e.preventDefault(); go(slides.length - 1); }
+    else if (k === 'f' || k === 'F') toggleFs();
+    else if (k === 't' || k === 'T') toggleTheme();
+    else if (/^[1-7]$/.test(k)) go(parseInt(k, 10) - 1);
+  });
+
+  deck.addEventListener('click', function(e){
+    if (e.target.closest('a,button')) return;
+    if (window.getSelection && String(window.getSelection())) return;
+    if (e.clientX < window.innerWidth * 0.22) prev(); else next();
+  });
+  var tx = 0, ty = 0;
+  deck.addEventListener('touchstart', function(e){ tx = e.touches[0].clientX; ty = e.touches[0].clientY; }, {passive:true});
+  deck.addEventListener('touchend', function(e){
+    var dx = e.changedTouches[0].clientX - tx, dy = e.changedTouches[0].clientY - ty;
+    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) { if (dx < 0) next(); else prev(); }
+  }, {passive:true});
+
+  /* ---- theme and fullscreen ---- */
+  var mq = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : {matches:true};
+  function effective(){ return root.getAttribute('data-theme') || (mq.matches ? 'dark' : 'light'); }
+  function toggleTheme(){ root.setAttribute('data-theme', effective() === 'dark' ? 'light' : 'dark'); }
+  document.getElementById('theme').addEventListener('click', function(e){ e.stopPropagation(); toggleTheme(); });
+
+  var fsBtn = document.getElementById('fs');
+  function toggleFs(){
+    try {
+      if (document.fullscreenElement) { var p = document.exitFullscreen(); if (p && p.catch) p.catch(function(){}); }
+      else if (root.requestFullscreen) { var q = root.requestFullscreen(); if (q && q.catch) q.catch(function(){}); }
+    } catch (e) {}
+  }
+  if (!document.fullscreenEnabled) fsBtn.hidden = true;
+  fsBtn.addEventListener('click', function(e){ e.stopPropagation(); toggleFs(); });
+
+  go(fromHash());
+})();
+</script>
+</body>
+</html>
